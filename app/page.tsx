@@ -15,8 +15,14 @@ export default async function Home() {
   let status: "ok" | "error" | "no-env" = "no-env";
   let detail = "환경변수(NEXT_PUBLIC_SUPABASE_URL/ANON_KEY)가 설정되지 않았습니다";
   let work: Work | null = null;
+  let worksCount: number | null = null;
 
   if (supabase) {
+    const { count } = await supabase
+      .from("works")
+      .select("id", { count: "exact", head: true });
+    worksCount = count;
+
     const { data, error } = await supabase
       .from("works")
       .select("id, media_type, canonical_title, title_ko, release_year")
@@ -61,6 +67,12 @@ export default async function Home() {
           <p data-testid="first-work" className="mt-3 text-sm">
             첫 작품: <strong>{work.title_ko ?? work.canonical_title}</strong> (
             {work.media_type}, {work.release_year})
+          </p>
+        )}
+
+        {worksCount !== null && (
+          <p className="mt-1 text-sm">
+            카탈로그: <strong data-testid="works-count">{worksCount}</strong>건
           </p>
         )}
       </div>
