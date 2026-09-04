@@ -76,6 +76,12 @@ export default async function Home() {
           </p>
         )}
       </div>
+
+      <div className="mt-4">
+        <a href="/records" className="text-sm font-medium text-blue-600">
+          내 기록 →
+        </a>
+      </div>
     </main>
   );
 }
