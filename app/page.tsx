@@ -1,69 +1,69 @@
-import Image from "next/image";
+import { supabase } from "@/lib/supabase";
 
-export default function Home() {
+// DB 상태 확인 화면이므로 항상 요청 시점에 렌더링한다
+export const dynamic = "force-dynamic";
+
+type Work = {
+  id: string;
+  media_type: string;
+  canonical_title: string;
+  title_ko: string | null;
+  release_year: number | null;
+};
+
+export default async function Home() {
+  let status: "ok" | "error" | "no-env" = "no-env";
+  let detail = "환경변수(NEXT_PUBLIC_SUPABASE_URL/ANON_KEY)가 설정되지 않았습니다";
+  let work: Work | null = null;
+
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("works")
+      .select("id, media_type, canonical_title, title_ko, release_year")
+      .limit(1);
+    if (error) {
+      status = "error";
+      detail = error.message;
+    } else if (!data || data.length === 0) {
+      status = "error";
+      detail = "works 테이블이 비어 있습니다 — 마이그레이션 0001을 적용했는지 확인";
+    } else {
+      status = "ok";
+      detail = "DB 연결 정상";
+      work = data[0];
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="mx-auto max-w-xl p-8">
+      <h1 className="text-2xl font-bold">🗺️ 취향 지도</h1>
+      <p className="mt-1 text-sm text-gray-500">
+        (가칭) — T7 walking skeleton: 이 화면은 배포·DB 연결 확인용입니다
+      </p>
+
+      <div className="mt-6 rounded-lg border border-gray-200 p-4">
+        <p className="text-sm">
+          DB 상태:{" "}
+          <span
+            data-testid="db-status"
+            className={
+              status === "ok"
+                ? "font-semibold text-green-600"
+                : "font-semibold text-red-600"
+            }
+          >
+            {status}
+          </span>
+        </p>
+        <p className="mt-1 text-xs text-gray-500">{detail}</p>
+
+        {work && (
+          <p data-testid="first-work" className="mt-3 text-sm">
+            첫 작품: <strong>{work.title_ko ?? work.canonical_title}</strong> (
+            {work.media_type}, {work.release_year})
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        )}
+      </div>
+    </main>
   );
 }

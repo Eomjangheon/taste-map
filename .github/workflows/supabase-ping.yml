@@ -1,0 +1,21 @@
+# Supabase 무료 티어 pause 방지 (T7) — 2일마다 dev·prod에 읽기 요청 1회.
+# 필요 설정: Actions Variables 에 URL/KEY 4종 (DEV·PROD).
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "0 3 */2 * *" # 격일 12:00 KST 무렵
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping dev
+        run: >
+          curl -sf "${{ vars.NEXT_PUBLIC_SUPABASE_URL_DEV }}/rest/v1/works?select=id&limit=1"
+          -H "apikey: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV }}" -o /dev/null
+      - name: Ping prod
+        run: >
+          curl -sf "${{ vars.NEXT_PUBLIC_SUPABASE_URL_PROD }}/rest/v1/works?select=id&limit=1"
+          -H "apikey: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD }}" -o /dev/null

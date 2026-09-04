@@ -1,0 +1,28 @@
+# 회귀 방어 CI (T7) — PR·main 푸시마다 빌드 + 스모크 전체 실행.
+# 빨간불이면 머지 금지. 사람은 초록/빨강만 읽는다 (docs/collaboration.md).
+# 필요 설정: GitHub 저장소 Settings → Secrets and variables → Actions → Variables 에
+#   NEXT_PUBLIC_SUPABASE_URL_DEV / NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV (dev 프로젝트 값)
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL_DEV }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npx playwright test
