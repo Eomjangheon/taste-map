@@ -77,12 +77,15 @@ export default async function Home() {
         )}
       </div>
 
-      <div className="mt-4 flex gap-4">
+      <div className="mt-4 flex flex-wrap gap-4">
         <a href="/records" className="text-sm font-medium text-blue-600">
           내 기록 →
         </a>
         <a href="/library" className="text-sm font-medium text-blue-600">
           모아보기 →
+        </a>
+        <a href="/catalog/games" className="text-sm font-medium text-blue-600">
+          게임 카탈로그(IGDB) →
         </a>
       </div>
     </main>
