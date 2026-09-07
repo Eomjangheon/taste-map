@@ -2,6 +2,8 @@
 # 빨간불이면 머지 금지. 사람은 초록/빨강만 읽는다 (docs/collaboration.md).
 # 필요 설정: GitHub 저장소 Settings → Secrets and variables → Actions → Variables 에
 #   NEXT_PUBLIC_SUPABASE_URL_DEV / NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV (dev 프로젝트 값)
+# 그리고 Secrets 에 SUPABASE_SECRET_KEY_DEV / TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET (T11).
+#   이 셋이 없으면 T11 스모크는 skip 된다 — 빨간불이 되지는 않지만 완료 조건을 CI가 지켜주지 못한다.
 name: CI
 
 on:
@@ -16,6 +18,10 @@ jobs:
       CI: true
       NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL_DEV }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV }}
+      # 서버 전용 키 — Variables 가 아니라 Secrets 에 넣는다 (AGENTS.md 금지 규칙 5)
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY_DEV }}
+      TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+      TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
