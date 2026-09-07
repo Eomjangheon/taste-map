@@ -1,7 +1,8 @@
 "use client";
 
-// T17: 리스트 뷰 + 매체·상태·기간 필터 (§6.3, 뷰 3종 분할 1/3)
-// 필터 로직은 lib/records/filters.ts 모듈 — T41(그리드)·T42(캘린더)가 그대로 재사용한다.
+// 모아보기 (T17 리스트 + T41 그리드, 뷰 3종 분할 — 캘린더는 T42)
+// 필터 로직은 lib/records/filters.ts 모듈 — 모든 뷰가 같은 필터 상태를 공유하므로
+// 뷰를 전환해도 필터가 유지된다 (T42 요구사항 선반영).
 // demo=1이면 저장소 대신 검수용 데모 기록 200건(메모리)을 보여준다.
 
 import { useEffect, useMemo, useState } from "react";
@@ -15,15 +16,10 @@ import {
   type RecordFilters,
 } from "@/lib/records/filters";
 import { buildDemoRecords } from "@/lib/records/demo";
-import { MEDIA_LABEL, STATUS_LABEL, STATUS_STYLE } from "@/lib/records/labels";
-
-type Work = {
-  id: string;
-  media_type: string;
-  canonical_title: string;
-  title_ko: string | null;
-  release_year: number | null;
-};
+import { MEDIA_LABEL, STATUS_LABEL } from "@/lib/records/labels";
+import { type Work } from "./types";
+import GridView from "./grid-view";
+import ListView from "./list-view";
 
 const MEDIA_OPTIONS = ["all", "game", "movie", "tv"] as const;
 const STATUS_OPTIONS = [
@@ -34,11 +30,14 @@ const STATUS_OPTIONS = [
   "backlog",
 ] as const;
 
+type ViewMode = "grid" | "list";
+
 export default function LibraryClient({ demo }: { demo: boolean }) {
   const [works, setWorks] = useState<Work[]>([]);
   const [records, setRecords] = useState<TasteRecord[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [filters, setFilters] = useState<RecordFilters>(DEFAULT_FILTERS);
+  const [view, setView] = useState<ViewMode>("grid"); // 그리드 = 대표 뷰 (§6.3)
 
   useEffect(() => {
     let cancelled = false;
@@ -47,7 +46,9 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
         ? ((
             await supabase
               .from("works")
-              .select("id, media_type, canonical_title, title_ko, release_year")
+              .select(
+                "id, media_type, canonical_title, title_ko, release_year, external_ids"
+              )
               .order("id")
           ).data ?? [])
         : [];
@@ -87,9 +88,11 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
     filters.media !== "all" ||
     filters.status !== "all" ||
     filters.period !== "all";
+  // 필터가 바뀌면 그리드의 "더 보기" 페이지를 처음으로 리셋
+  const filterKey = `${filters.media}|${filters.status}|${filters.period}`;
 
   return (
-    <main className="mx-auto w-full max-w-xl p-6 sm:p-8">
+    <main className="mx-auto w-full max-w-2xl p-6 sm:p-8">
       <div className="flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">모아보기</h1>
         <a href="/records" className="text-sm font-medium text-blue-600">
@@ -103,138 +106,136 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
         </p>
       )}
 
-      {/* ── 필터 바 (매체·상태·기간) ── */}
-      <div className="mt-5 flex flex-col gap-2">
-        <div className="flex flex-wrap gap-1.5" data-testid="filter-media">
-          {MEDIA_OPTIONS.map((m) => (
-            <button
-              key={m}
-              onClick={() => setFilters((f) => ({ ...f, media: m }))}
-              data-testid={`filter-media-${m}`}
-              className={`rounded-full border px-3 py-1 text-xs ${
-                filters.media === m
-                  ? "border-blue-500 bg-blue-50 font-medium text-blue-700"
-                  : "border-gray-300 text-gray-600"
-              }`}
-            >
-              {m === "all" ? "전체 매체" : MEDIA_LABEL[m]}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-1.5" data-testid="filter-status">
-          {STATUS_OPTIONS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilters((f) => ({ ...f, status: s }))}
-              data-testid={`filter-status-${s}`}
-              className={`rounded-full border px-3 py-1 text-xs ${
-                filters.status === s
-                  ? "border-blue-500 bg-blue-50 font-medium text-blue-700"
-                  : "border-gray-300 text-gray-600"
-              }`}
-            >
-              {s === "all" ? "전체 상태" : STATUS_LABEL[s as RecordStatus]}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={filters.period}
-            onChange={(e) =>
-              setFilters((f) => ({
-                ...f,
-                period: e.target.value as PeriodFilter,
-              }))
-            }
-            data-testid="filter-period"
-            className="rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-700"
+      {/* ── 기록 0건: 빈 상태 화면 (T27 온보딩의 가져오기·기록 유도가 들어올 자리) ── */}
+      {loaded && records.length === 0 ? (
+        <div
+          className="mt-10 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-6 py-14 text-center"
+          data-testid="empty-screen"
+        >
+          <span className="text-4xl">🗺️</span>
+          <p className="text-base font-semibold">아직 기록이 없어요</p>
+          <p className="text-sm text-gray-500">
+            첫 작품을 기록하면 이 자리가 포스터로 채워집니다.
+          </p>
+          <a
+            href="/records"
+            className="mt-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white"
           >
-            {(Object.keys(PERIOD_LABEL) as PeriodFilter[]).map((p) => (
-              <option key={p} value={p}>
-                {PERIOD_LABEL[p]}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs text-gray-400">기간은 감상일 기준</span>
-          {filterActive && (
-            <button
-              onClick={() => setFilters(DEFAULT_FILTERS)}
-              data-testid="filter-reset"
-              className="ml-auto text-xs text-blue-600"
-            >
-              필터 초기화
-            </button>
-          )}
+            첫 작품 기록하기
+          </a>
+          <p className="text-xs text-gray-400">
+            Steam 라이브러리 한 번에 가져오기는 준비 중이에요.
+          </p>
         </div>
-      </div>
-
-      <p className="mt-4 text-sm text-gray-500">
-        <strong data-testid="filtered-count" className="text-gray-900">
-          {filtered.length}
-        </strong>
-        건
-      </p>
-
-      {/* ── 리스트 뷰: 제목·연도·상태·별점 ── */}
-      <ul data-testid="library-list" className="mt-2 flex flex-col gap-2">
-        {loaded && filtered.length === 0 ? (
-          <li
-            className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-400"
-            data-testid="empty-state"
-          >
-            {records.length === 0 ? (
-              <>
-                아직 기록이 없어요.{" "}
-                <a href="/records" className="font-medium text-blue-600">
-                  첫 작품 기록하러 가기 →
-                </a>
-              </>
-            ) : (
-              <>조건에 맞는 기록이 없어요. 필터를 풀어보세요.</>
-            )}
-          </li>
-        ) : (
-          filtered.map((r) => {
-            const w = workById.get(r.work_id);
-            return (
-              <li
-                key={r.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 px-3 py-2.5"
+      ) : (
+        <>
+          {/* ── 뷰 탭 + 필터 바 ── */}
+          <div className="mt-5 flex flex-col gap-2">
+            <div className="flex gap-1 rounded-lg bg-gray-100 p-1 self-start">
+              {(
+                [
+                  ["grid", "그리드"],
+                  ["list", "리스트"],
+                ] as [ViewMode, string][]
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  onClick={() => setView(mode)}
+                  data-testid={`view-${mode}`}
+                  className={`rounded-md px-3 py-1 text-xs font-medium ${
+                    view === mode
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5" data-testid="filter-media">
+              {MEDIA_OPTIONS.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setFilters((f) => ({ ...f, media: m }))}
+                  data-testid={`filter-media-${m}`}
+                  className={`rounded-full border px-3 py-1 text-xs ${
+                    filters.media === m
+                      ? "border-blue-500 bg-blue-50 font-medium text-blue-700"
+                      : "border-gray-300 text-gray-600"
+                  }`}
+                >
+                  {m === "all" ? "전체 매체" : MEDIA_LABEL[m]}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5" data-testid="filter-status">
+              {STATUS_OPTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilters((f) => ({ ...f, status: s }))}
+                  data-testid={`filter-status-${s}`}
+                  className={`rounded-full border px-3 py-1 text-xs ${
+                    filters.status === s
+                      ? "border-blue-500 bg-blue-50 font-medium text-blue-700"
+                      : "border-gray-300 text-gray-600"
+                  }`}
+                >
+                  {s === "all" ? "전체 상태" : STATUS_LABEL[s as RecordStatus]}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={filters.period}
+                onChange={(e) =>
+                  setFilters((f) => ({
+                    ...f,
+                    period: e.target.value as PeriodFilter,
+                  }))
+                }
+                data-testid="filter-period"
+                className="rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-700"
               >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">
-                    {w ? (w.title_ko ?? w.canonical_title) : "(작품 정보 없음)"}
-                    {w?.release_year != null && (
-                      <span className="ml-1.5 text-xs font-normal text-gray-400">
-                        {w.release_year}
-                      </span>
-                    )}
-                  </p>
-                  <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
-                    {w && (
-                      <span
-                        className="rounded bg-gray-100 px-1.5 py-0.5"
-                        data-testid="row-media"
-                      >
-                        {MEDIA_LABEL[w.media_type] ?? w.media_type}
-                      </span>
-                    )}
-                    <span
-                      className={`rounded px-1.5 py-0.5 ${STATUS_STYLE[r.status]}`}
-                    >
-                      {STATUS_LABEL[r.status]}
-                    </span>
-                    {r.consumed_at && <span>{r.consumed_at}</span>}
-                  </p>
-                </div>
-                <span className="shrink-0 text-sm text-gray-700">
-                  {r.rating != null ? `★ ${r.rating.toFixed(1)}` : ""}
-                </span>
-              </li>
-            );
-          })
-        )}
-      </ul>
+                {(Object.keys(PERIOD_LABEL) as PeriodFilter[]).map((p) => (
+                  <option key={p} value={p}>
+                    {PERIOD_LABEL[p]}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-gray-400">기간은 감상일 기준</span>
+              {filterActive && (
+                <button
+                  onClick={() => setFilters(DEFAULT_FILTERS)}
+                  data-testid="filter-reset"
+                  className="ml-auto text-xs text-blue-600"
+                >
+                  필터 초기화
+                </button>
+              )}
+            </div>
+          </div>
+
+          <p className="mt-4 text-sm text-gray-500">
+            <strong data-testid="filtered-count" className="text-gray-900">
+              {filtered.length}
+            </strong>
+            건
+          </p>
+
+          {loaded && filtered.length === 0 ? (
+            <div
+              className="mt-2 rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-400"
+              data-testid="empty-state"
+            >
+              조건에 맞는 기록이 없어요. 필터를 풀어보세요.
+            </div>
+          ) : view === "grid" ? (
+            <GridView key={filterKey} records={filtered} workById={workById} />
+          ) : (
+            <ListView records={filtered} workById={workById} />
+          )}
+        </>
+      )}
     </main>
   );
 }
