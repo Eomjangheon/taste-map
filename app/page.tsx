@@ -87,6 +87,9 @@ export default async function Home() {
         <a href="/catalog/games" className="text-sm font-medium text-blue-600">
           게임 카탈로그(IGDB) →
         </a>
+        <a href="/catalog/titles" className="text-sm font-medium text-blue-600">
+          영화·드라마 카탈로그(TMDB) →
+        </a>
       </div>
     </main>
   );

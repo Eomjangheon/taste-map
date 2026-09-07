@@ -55,12 +55,17 @@ export async function GET(request: Request) {
     }
 
     const { works, created, existing } = await upsertGameWorks(candidates);
-    const byIgdbId = new Map(candidates.map((c) => [c.igdbId, c]));
+
+    // works 는 candidates 와 같은 길이·순서다 (적재 실패 자리는 null)
+    const pairs = works
+      .map((work, i) => ({ work, candidate: candidates[i] }))
+      .filter((p): p is { work: NonNullable<typeof p.work>; candidate: (typeof candidates)[number] } =>
+        p.work !== null
+      );
 
     return NextResponse.json({
       query,
-      results: works.map((work) => {
-        const candidate = byIgdbId.get(Number(work.external_ids?.igdb));
+      results: pairs.map(({ work, candidate }) => {
         return {
           id: work.id,
           canonicalTitle: work.canonical_title,
@@ -70,9 +75,9 @@ export async function GET(request: Request) {
           igdbId: work.external_ids?.igdb ?? null,
           steamAppId: work.external_ids?.steam_appid ?? null,
           parentWorkId: work.parent_work_id,
-          gameType: candidate?.gameType ?? null,
+          gameType: candidate.gameType ?? null,
           // 커버는 저장하지 않고 조회 시점에 조립한다 (docs/igdb.md)
-          coverUrl: candidate?.coverImageId ? coverUrl(candidate.coverImageId) : null,
+          coverUrl: candidate.coverImageId ? coverUrl(candidate.coverImageId) : null,
         };
       }),
       created,
