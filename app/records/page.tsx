@@ -15,32 +15,13 @@ import {
   type TasteRecord,
   type RecordStatus,
 } from "@/lib/records";
+import { STATUS_LABEL, STATUS_STYLE, MEDIA_LABEL } from "@/lib/records/labels";
 
 type WorkOption = {
   id: string;
   media_type: string;
   canonical_title: string;
   title_ko: string | null;
-};
-
-const STATUS_LABEL: Record<RecordStatus, string> = {
-  completed: "봤어요",
-  in_progress: "보는 중",
-  dropped: "중도하차",
-  backlog: "볼 예정",
-};
-
-const STATUS_STYLE: Record<RecordStatus, string> = {
-  completed: "bg-green-100 text-green-800",
-  in_progress: "bg-blue-100 text-blue-800",
-  dropped: "bg-orange-100 text-orange-800",
-  backlog: "bg-gray-100 text-gray-600",
-};
-
-const MEDIA_LABEL: Record<string, string> = {
-  game: "게임",
-  movie: "영화",
-  tv: "드라마",
 };
 
 /** 띄어쓰기·특수문자 무시 비교용 정규화 (WEB-4 관찰 반영 — 정식 규칙은 T18에서 A가 소유)
@@ -69,15 +50,23 @@ export default function RecordsPage() {
   }, [store]);
 
   useEffect(() => {
-    reload();
-    if (supabase) {
-      supabase
-        .from("works")
-        .select("id, media_type, canonical_title, title_ko")
-        .order("title_ko")
-        .then(({ data }) => setWorks(data ?? []));
+    let cancelled = false;
+    async function load() {
+      const list = await store.list();
+      if (!cancelled) setRecords(list);
+      if (supabase) {
+        const { data } = await supabase
+          .from("works")
+          .select("id, media_type, canonical_title, title_ko")
+          .order("title_ko");
+        if (!cancelled) setWorks(data ?? []);
+      }
     }
-  }, [reload]);
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [store]);
 
   const workById = useMemo(() => new Map(works.map((w) => [w.id, w])), [works]);
   const titleOf = (id: string) => {
@@ -164,7 +153,12 @@ export default function RecordsPage() {
 
   return (
     <main className="mx-auto w-full max-w-xl p-6 sm:p-8">
-      <h1 className="text-2xl font-bold">내 기록</h1>
+      <div className="flex items-baseline justify-between">
+        <h1 className="text-2xl font-bold">내 기록</h1>
+        <a href="/library" className="text-sm font-medium text-blue-600">
+          모아보기 →
+        </a>
+      </div>
       <p className="mt-1 text-xs text-gray-500">
         계정 없이 <strong>이 브라우저에만</strong> 저장됩니다 — 가입하면 서버에
         안전하게 보관돼요 (준비 중).
