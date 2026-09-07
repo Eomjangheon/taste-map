@@ -43,9 +43,10 @@ const MEDIA_LABEL: Record<string, string> = {
   tv: "드라마",
 };
 
-/** 띄어쓰기·특수문자 무시 비교용 정규화 (WEB-4 관찰 반영 — 정식 규칙은 T18에서 A가 소유) */
+/** 띄어쓰기·특수문자 무시 비교용 정규화 (WEB-4 관찰 반영 — 정식 규칙은 T18에서 A가 소유)
+ *  주의: \W 는 한글까지 지워버린다 — 모든 언어의 글자·숫자(\p{L}\p{N})만 남긴다 */
 function loose(s: string): string {
-  return s.toLowerCase().replace(/[\s\W_]+/gu, "");
+  return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
 export default function RecordsPage() {

@@ -11,10 +11,14 @@ test("2단 기록: 띄어쓰기 무시 검색 → 즉시 저장 → 별점·감�
 
   await page.goto("/records");
 
-  // 1단계: 띄어쓰기가 틀린 검색어로도 찾아진다 (WEB-4 관찰 반영)
-  await page.getByTestId("work-search").fill("겨울 왕국");
+  // 1단계: 띄어쓰기·문장부호가 틀린 검색어로도 찾아진다 (WEB-4 관찰 반영)
+  // 실제 제목은 "너의 이름은." — 붙여 쓰고 마침표 없이 검색
+  await page.getByTestId("work-search").fill("너의이름은");
   const results = page.getByTestId("work-results");
-  await expect(results).toContainText("겨울왕국");
+  await expect(results).toContainText("너의 이름은");
+  // 필터가 실제로 걸러내는지 확인 — 무관한 제목이 나오면 안 됨 (한글 전체 삭제 버그 회귀 방지)
+  await expect(results).not.toContainText("겨울왕국");
+  await expect(results.locator("button")).toHaveCount(1);
   await results.locator("button").first().click();
 
   // 상태 탭 = 즉시 저장 (여기서 종료 가능)
