@@ -11,22 +11,16 @@ test("게스트 기록이 저장되고 새로고침해도 유지된다 (T15 완�
 
   await page.goto("/records");
 
-  // 작품 목록 로드 대기 후 첫 작품 선택
-  const workSelect = page.getByTestId("work-select");
-  await expect(async () => {
-    const count = await workSelect.locator("option").count();
-    expect(count).toBeGreaterThan(1);
-  }).toPass({ timeout: 10_000 });
-  await workSelect.selectOption({ index: 1 });
-  await page.getByTestId("status-select").selectOption("in_progress");
-  await page.getByTestId("save-record").click();
+  await page.getByTestId("work-search").fill("스타듀");
+  await page.getByTestId("work-results").locator("button").first().click();
+  await page.getByTestId("quick-in_progress").click();
 
   const list = page.getByTestId("record-list");
-  await expect(list.locator("li")).toHaveCount(1);
+  await expect(list.locator("> li")).toHaveCount(1);
   await expect(list).toContainText("보는 중");
 
   // 새로고침 후에도 유지 (IndexedDB 영속성)
   await page.reload();
-  await expect(list.locator("li")).toHaveCount(1);
+  await expect(list.locator("> li")).toHaveCount(1);
   await expect(list).toContainText("보는 중");
 });
