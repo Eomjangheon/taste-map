@@ -52,8 +52,17 @@ export type GameCandidate = {
   gameType: string | null;
   steamAppId: number | null;
   coverImageId: string | null;
-  /** §3.1 상 별개 Work 이지만 UI 그룹핑용으로 상위 작품을 연결한다 */
-  parent: { igdbId: number; title: string; releaseYear: number | null } | null;
+  /**
+   * §3.1 상 별개 Work 이지만 UI 그룹핑용으로 상위 작품을 연결한다.
+   * steamAppId 는 부모를 새로 만들기 전 기존 행과 대조하는 데 쓴다 —
+   * 없으면 시드처럼 steam_appid 만 있는 부모 행을 못 알아보고 중복을 만든다.
+   */
+  parent: {
+    igdbId: number;
+    title: string;
+    releaseYear: number | null;
+    steamAppId: number | null;
+  } | null;
 };
 
 function releaseYear(unixSeconds?: number): number | null {
@@ -95,6 +104,7 @@ function toCandidate(game: IgdbGame): GameCandidate | null {
       igdbId: parentRaw.id,
       title: parentRaw.name ?? `IGDB ${parentRaw.id}`,
       releaseYear: releaseYear(parentRaw.first_release_date),
+      steamAppId: null, // enrichParents 가 채운다 (중첩 확장으로는 못 가져온다)
     };
   }
 
@@ -130,7 +140,35 @@ export async function searchGames(term: string, limit = 10): Promise<GameCandida
   ];
 
   const { rows } = await igdbQueryWithFallback<IgdbGame>("games", bodies);
-  return rows.map(toCandidate).filter((c): c is GameCandidate => c !== null);
+  const candidates = rows.map(toCandidate).filter((c): c is GameCandidate => c !== null);
+  return enrichParents(candidates);
+}
+
+/**
+ * 검색 결과에 없는 부모 작품의 steam_appid 를 따로 조회해 채운다.
+ * parent_game 중첩 확장으로는 부모의 external_games 까지 가져올 수 없어서, id 로 한 번 더 묻는다.
+ * 이게 없으면 steam_appid 만 있는 기존 부모 행(시드 등)을 못 알아보고 부모를 중복 생성한다.
+ */
+async function enrichParents(candidates: GameCandidate[]): Promise<GameCandidate[]> {
+  const ownIds = new Set(candidates.map((c) => c.igdbId));
+  const parentIds = [
+    ...new Set(
+      candidates
+        .map((c) => c.parent?.igdbId)
+        .filter((id): id is number => typeof id === "number" && !ownIds.has(id))
+    ),
+  ];
+  if (parentIds.length === 0) return candidates;
+
+  const rows = await igdbQuery<IgdbGame>(
+    "games",
+    `fields id,external_games.uid,external_games.external_game_source; where id = (${parentIds.join(",")}); limit ${parentIds.length};`
+  );
+  const appIdByGame = new Map(rows.map((row) => [row.id, steamAppId(row)]));
+
+  return candidates.map((c) =>
+    c.parent ? { ...c, parent: { ...c.parent, steamAppId: appIdByGame.get(c.parent.igdbId) ?? null } } : c
+  );
 }
 
 /**
