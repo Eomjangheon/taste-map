@@ -144,18 +144,31 @@ export type UpsertResult = {
 export async function upsertGameWorks(candidates: GameCandidate[]): Promise<UpsertResult> {
   if (candidates.length === 0) return { works: [], created: 0, existing: 0 };
 
-  const parents = new Map<number, GameCandidate["parent"]>();
+  // 검색 결과에 없는 부모를 후보와 같은 형태로 만든다.
+  // 부모도 본체와 똑같이 igdb·steam_appid 양쪽으로 대조해야 한다 —
+  // 한쪽만 하면 steam_appid 만 있는 기존 부모 행을 못 알아보고 중복이 생긴다.
+  const parentCandidates: GameCandidate[] = [];
   for (const c of candidates) {
-    if (c.parent && !candidates.some((other) => other.igdbId === c.parent!.igdbId)) {
-      parents.set(c.parent.igdbId, c.parent);
-    }
+    const p = c.parent;
+    if (!p) continue;
+    if (candidates.some((other) => other.igdbId === p.igdbId)) continue;
+    if (parentCandidates.some((other) => other.igdbId === p.igdbId)) continue;
+    parentCandidates.push({
+      igdbId: p.igdbId,
+      title: p.title,
+      releaseYear: p.releaseYear,
+      gameType: null,
+      steamAppId: p.steamAppId,
+      coverImageId: null,
+      parent: null,
+    });
   }
 
-  const wanted = [...new Set([...candidates.map((c) => c.igdbId), ...parents.keys()])];
-  const known = await findByIgdbIds(wanted);
+  const all = [...parentCandidates, ...candidates];
+  const known = await findByIgdbIds(all.map((c) => c.igdbId));
 
   // igdb id 로 못 찾은 것은 steam_appid 로 한 번 더 대조한다 (시드·가져오기로 먼저 들어온 행)
-  const steamLookup = candidates.filter((c) => c.steamAppId && !known.has(c.igdbId));
+  const steamLookup = all.filter((c) => c.steamAppId && !known.has(c.igdbId));
   if (steamLookup.length > 0) {
     const bySteam = await findBySteamAppIds(steamLookup.map((c) => c.steamAppId!));
     const claimed = new Set([...known.values()].map((row) => row.id));
@@ -172,23 +185,8 @@ export async function upsertGameWorks(candidates: GameCandidate[]): Promise<Upse
   let created = 0;
 
   // 1) 부모 먼저 — 자식의 parent_work_id 를 채우려면 id 가 필요하다
-  const missingParents = [...parents.values()].filter((p) => p && !known.has(p.igdbId));
-  const parentRows = await insertWorks(
-    missingParents.map((p) =>
-      toNewWork(
-        {
-          igdbId: p!.igdbId,
-          title: p!.title,
-          releaseYear: p!.releaseYear,
-          gameType: null,
-          steamAppId: null,
-          coverImageId: null,
-          parent: null,
-        },
-        null
-      )
-    )
-  );
+  const missingParents = parentCandidates.filter((p) => !known.has(p.igdbId));
+  const parentRows = await insertWorks(missingParents.map((p) => toNewWork(p, null)));
   for (const row of parentRows) {
     const id = igdbIdOf(row);
     if (id !== null) known.set(id, row);
@@ -206,15 +204,18 @@ export async function upsertGameWorks(candidates: GameCandidate[]): Promise<Upse
     created += 1;
   }
 
-  // 3) 이미 있던 행은 빈 칸만 채운다
+  // 3) 이미 있던 행은 빈 칸만 채운다. 기존 부모 행도 대상이다 —
+  //    steam_appid 로 찾아낸 부모에는 igdb id 가 없어서 다음 검색 때 또 못 찾는다.
   let existing = 0;
-  for (const c of candidates) {
+  for (const c of [...parentCandidates, ...candidates]) {
     const row = known.get(c.igdbId);
     if (!row) continue;
-    if (!missing.some((m) => m.igdbId === c.igdbId)) {
-      existing += 1;
-      known.set(c.igdbId, await backfill(row, c));
-    }
+    const isNew =
+      missing.some((m) => m.igdbId === c.igdbId) || missingParents.some((m) => m.igdbId === c.igdbId);
+    if (isNew) continue;
+    // existing 은 검색 결과 기준으로만 센다 (화면에 보이는 건수와 맞추기 위해)
+    if (candidates.some((other) => other.igdbId === c.igdbId)) existing += 1;
+    known.set(c.igdbId, await backfill(row, c));
   }
 
   const works = candidates
