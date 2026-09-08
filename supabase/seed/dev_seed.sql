@@ -59,42 +59,152 @@ from (values
   ('game', 'The Legend of Zelda: Breath of the Wild', '젤다의 전설: 야생의 숨결', 2017, '{}'),
   ('game', 'The Legend of Zelda: Tears of the Kingdom', '젤다의 전설: 왕국의 눈물', 2023, '{}'),
   -- 영화 20
-  ('movie', 'Parasite', '기생충', 2019, '{}'),
-  ('movie', 'Inception', '인셉션', 2010, '{}'),
-  ('movie', 'Interstellar', '인터스텔라', 2014, '{}'),
-  ('movie', 'The Dark Knight', '다크 나이트', 2008, '{}'),
-  ('movie', 'Avengers: Endgame', '어벤져스: 엔드게임', 2019, '{}'),
-  ('movie', 'La La Land', '라라랜드', 2016, '{}'),
-  ('movie', 'Your Name.', '너의 이름은.', 2016, '{}'),
-  ('movie', 'Suzume', '스즈메의 문단속', 2022, '{}'),
-  ('movie', 'Extreme Job', '극한직업', 2019, '{}'),
-  ('movie', 'The Outlaws', '범죄도시', 2017, '{}'),
-  ('movie', 'Decision to Leave', '헤어질 결심', 2022, '{}'),
-  ('movie', 'Dune', '듄', 2021, '{}'),
-  ('movie', 'Dune: Part Two', '듄: 파트 2', 2024, '{}'),
-  ('movie', 'Justice League', '저스티스 리그', 2017, '{}'),
-  ('movie', 'Zack Snyder''s Justice League', '잭 스나이더의 저스티스 리그', 2021, '{}'),
-  ('movie', 'Mad Max: Fury Road', '매드 맥스: 분노의 도로', 2015, '{}'),
-  ('movie', 'Frozen', '겨울왕국', 2013, '{}'),
-  ('movie', 'Spider-Man: Into the Spider-Verse', '스파이더맨: 뉴 유니버스', 2018, '{}'),
-  ('movie', 'Oldboy', '올드보이', 2003, '{}'),
-  ('movie', 'Train to Busan', '부산행', 2016, '{}'),
+  ('movie', 'Parasite', '기생충', 2019, '{"tmdb": 496243}'),
+  ('movie', 'Inception', '인셉션', 2010, '{"tmdb": 27205}'),
+  ('movie', 'Interstellar', '인터스텔라', 2014, '{"tmdb": 157336}'),
+  ('movie', 'The Dark Knight', '다크 나이트', 2008, '{"tmdb": 155}'),
+  ('movie', 'Avengers: Endgame', '어벤져스: 엔드게임', 2019, '{"tmdb": 299534}'),
+  ('movie', 'La La Land', '라라랜드', 2016, '{"tmdb": 313369}'),
+  ('movie', 'Your Name.', '너의 이름은.', 2016, '{"tmdb": 372058}'),
+  ('movie', 'Suzume', '스즈메의 문단속', 2022, '{"tmdb": 916224}'),
+  ('movie', 'Extreme Job', '극한직업', 2019, '{"tmdb": 567646}'),
+  ('movie', 'The Outlaws', '범죄도시', 2017, '{"tmdb": 479718}'),
+  ('movie', 'Decision to Leave', '헤어질 결심', 2022, '{"tmdb": 705996}'),
+  ('movie', 'Dune', '듄', 2021, '{"tmdb": 438631}'),
+  ('movie', 'Dune: Part Two', '듄: 파트 2', 2024, '{"tmdb": 693134}'),
+  ('movie', 'Justice League', '저스티스 리그', 2017, '{"tmdb": 141052}'),
+  ('movie', 'Zack Snyder''s Justice League', '잭 스나이더의 저스티스 리그', 2021, '{"tmdb": 791373}'),
+  ('movie', 'Mad Max: Fury Road', '매드 맥스: 분노의 도로', 2015, '{"tmdb": 76341}'),
+  ('movie', 'Frozen', '겨울왕국', 2013, '{"tmdb": 109445}'),
+  ('movie', 'Spider-Man: Into the Spider-Verse', '스파이더맨: 뉴 유니버스', 2018, '{"tmdb": 324857}'),
+  ('movie', 'Oldboy', '올드보이', 2003, '{"tmdb": 670}'),
+  ('movie', 'Train to Busan', '부산행', 2016, '{"tmdb": 396535}'),
   -- 드라마·TV 10 (시즌 = 별개 작품)
-  ('tv', 'Squid Game', '오징어 게임', 2021, '{}'),
-  ('tv', 'Squid Game Season 2', '오징어 게임 시즌 2', 2024, '{}'),
-  ('tv', 'The Glory', '더 글로리', 2022, '{}'),
-  ('tv', 'Extraordinary Attorney Woo', '이상한 변호사 우영우', 2022, '{}'),
-  ('tv', 'Chernobyl', '체르노빌', 2019, '{}'),
-  ('tv', 'Game of Thrones Season 1', '왕좌의 게임 시즌 1', 2011, '{}'),
-  ('tv', 'Breaking Bad Season 1', '브레이킹 배드 시즌 1', 2008, '{}'),
-  ('tv', 'The Last of Us (TV)', '더 라스트 오브 어스 (드라마)', 2023, '{}'),
-  ('tv', 'Money Heist Part 1', '종이의 집 파트 1', 2017, '{}'),
-  ('tv', 'Mr. Sunshine', '미스터 션샤인', 2018, '{}')
+  ('tv', 'Squid Game', '오징어 게임', 2021, '{"tmdb": 93405}'),
+  ('tv', 'Squid Game Season 2', '오징어 게임 시즌 2', 2024, '{"tmdb_season_id": 287516}'),
+  ('tv', 'The Glory', '더 글로리', 2022, '{"tmdb": 136283}'),
+  ('tv', 'Extraordinary Attorney Woo', '이상한 변호사 우영우', 2022, '{"tmdb": 197067}'),
+  ('tv', 'Chernobyl', '체르노빌', 2019, '{"tmdb": 87108}'),
+  ('tv', 'Game of Thrones Season 1', '왕좌의 게임 시즌 1', 2011, '{"tmdb_season_id": 3624}'),
+  ('tv', 'Breaking Bad Season 1', '브레이킹 배드 시즌 1', 2008, '{"tmdb_season_id": 3572}'),
+  ('tv', 'The Last of Us (TV)', '더 라스트 오브 어스 (드라마)', 2023, '{"tmdb": 100088}'),
+  ('tv', 'Money Heist Part 1', '종이의 집 파트 1', 2017, '{"tmdb_season_id": 87809}'),
+  ('tv', 'Mr. Sunshine', '미스터 션샤인', 2018, '{"tmdb": 75820}')
 ) as v(media_type, canonical_title, title_ko, release_year, external_ids)
 where not exists (
   select 1 from public.works w
   where w.canonical_title = v.canonical_title and w.release_year = v.release_year
 );
+
+-- ── 2-B. 이미 들어가 있는 시드 행에 external_ids 백필 (WEB-51) ──
+-- 위 insert 는 '제목+연도' 가드 때문에 **기존 행을 건드리지 않는다.** 그래서 이미 시드가
+-- 적용된 dev DB 는 external_ids 가 비어 있는 상태로 남는다. 그 상태에서 카탈로그 적재(T11·T12)가
+-- 돌면 대조할 키가 없어 같은 작품을 새 행으로 또 만든다 — 이게 WEB-51 에서 보고된 중복의 원인이다.
+-- **비어 있을 때만** 채운다. 운영자나 적재가 넣어 둔 값은 건드리지 않는다.
+update public.works w
+set external_ids = v.external_ids::jsonb
+from (values
+  ('movie', 'Parasite', 2019, '{"tmdb": 496243}'),
+  ('movie', 'Inception', 2010, '{"tmdb": 27205}'),
+  ('movie', 'Interstellar', 2014, '{"tmdb": 157336}'),
+  ('movie', 'The Dark Knight', 2008, '{"tmdb": 155}'),
+  ('movie', 'Avengers: Endgame', 2019, '{"tmdb": 299534}'),
+  ('movie', 'La La Land', 2016, '{"tmdb": 313369}'),
+  ('movie', 'Your Name.', 2016, '{"tmdb": 372058}'),
+  ('movie', 'Suzume', 2022, '{"tmdb": 916224}'),
+  ('movie', 'Extreme Job', 2019, '{"tmdb": 567646}'),
+  ('movie', 'The Outlaws', 2017, '{"tmdb": 479718}'),
+  ('movie', 'Decision to Leave', 2022, '{"tmdb": 705996}'),
+  ('movie', 'Dune', 2021, '{"tmdb": 438631}'),
+  ('movie', 'Dune: Part Two', 2024, '{"tmdb": 693134}'),
+  ('movie', 'Justice League', 2017, '{"tmdb": 141052}'),
+  ('movie', 'Zack Snyder''s Justice League', 2021, '{"tmdb": 791373}'),
+  ('movie', 'Mad Max: Fury Road', 2015, '{"tmdb": 76341}'),
+  ('movie', 'Frozen', 2013, '{"tmdb": 109445}'),
+  ('movie', 'Spider-Man: Into the Spider-Verse', 2018, '{"tmdb": 324857}'),
+  ('movie', 'Oldboy', 2003, '{"tmdb": 670}'),
+  ('movie', 'Train to Busan', 2016, '{"tmdb": 396535}'),
+  ('tv', 'Squid Game', 2021, '{"tmdb": 93405}'),
+  ('tv', 'Squid Game Season 2', 2024, '{"tmdb_season_id": 287516}'),
+  ('tv', 'The Glory', 2022, '{"tmdb": 136283}'),
+  ('tv', 'Extraordinary Attorney Woo', 2022, '{"tmdb": 197067}'),
+  ('tv', 'Chernobyl', 2019, '{"tmdb": 87108}'),
+  ('tv', 'Game of Thrones Season 1', 2011, '{"tmdb_season_id": 3624}'),
+  ('tv', 'Breaking Bad Season 1', 2008, '{"tmdb_season_id": 3572}'),
+  ('tv', 'The Last of Us (TV)', 2023, '{"tmdb": 100088}'),
+  ('tv', 'Money Heist Part 1', 2017, '{"tmdb_season_id": 87809}'),
+  ('tv', 'Mr. Sunshine', 2018, '{"tmdb": 75820}')
+) as v(media_type, canonical_title, release_year, external_ids)
+where w.media_type = v.media_type
+  and w.canonical_title = v.canonical_title
+  and w.release_year = v.release_year
+  and (w.external_ids is null or w.external_ids = '{}'::jsonb);
+
+-- ── 2-C. 이미 생긴 중복 행 병합 (WEB-51) ──
+-- 2-B 로 시드에 외부 id 가 채워지면, 적재분과 시드가 **같은 외부 id 를 가진 두 행**이 된다.
+-- 여기서 하나로 합친다. 남기는 쪽은 먼저 만들어진 행(= 시드) 이다 — 한국어 제목과 원제가
+-- 제대로 들어 있는 쪽이라 화면 품질이 낫다. T11 에서 Stardew Valley·Elden Ring 을 정리한 것과 같은 방식이다.
+--
+-- ⚠ **dev 전용이다.** prod 에는 시드가 없고, 카탈로그 적재는 외부 id 로 대조하므로 이 중복이 생기지 않는다.
+-- (SQL Editor 에서 여러 번 돌려도 되도록 매번 새로 만든다. `on commit drop` 은
+--  트랜잭션 밖에서 돌리면 다음 문장 전에 사라져서 쓰지 않는다)
+drop table if exists _work_merge;
+create temporary table _work_merge as
+with keyed as (
+  select
+    id, media_type, created_at,
+    case
+      when external_ids ? 'tmdb_season_id' then 'tmdb_season_id'
+      when external_ids ? 'tmdb' then 'tmdb'
+      when external_ids ? 'igdb' then 'igdb'
+      when external_ids ? 'steam_appid' then 'steam_appid'
+    end as ext_key,
+    coalesce(
+      external_ids ->> 'tmdb_season_id', external_ids ->> 'tmdb',
+      external_ids ->> 'igdb', external_ids ->> 'steam_appid'
+    ) as ext_value
+  from public.works
+  where external_ids <> '{}'::jsonb
+),
+ranked as (
+  -- 같은 (매체, 외부 id) 묶음 안에서 가장 먼저 만들어진 행이 1번
+  select *, row_number() over (
+    partition by media_type, ext_key, ext_value order by created_at, id
+  ) as rn
+  from keyed
+  where ext_value is not null
+)
+select
+  loser.id as victim_id,
+  (select k.id from ranked k
+    where k.media_type = loser.media_type and k.ext_key = loser.ext_key
+      and k.ext_value = loser.ext_value and k.rn = 1) as keeper_id
+from ranked loser
+where loser.rn > 1;
+
+-- 자식(시즌·DLC)을 남는 행으로 재연결한다
+update public.works c
+set parent_work_id = m.keeper_id
+from _work_merge m
+where c.parent_work_id = m.victim_id;
+
+-- 기록을 남는 행으로 옮긴다. 같은 유저가 양쪽에 기록을 갖고 있으면 옮길 수 없다(unique user_id+work_id)
+update public.records r
+set work_id = m.keeper_id
+from _work_merge m
+where r.work_id = m.victim_id
+  and not exists (
+    select 1 from public.records other
+    where other.user_id = r.user_id and other.work_id = m.keeper_id
+  );
+
+-- 옮기지 못한 기록 = 남는 행에 이미 같은 작품 기록이 있는 경우. 중복이므로 지운다
+-- (dev 시드 기록에만 해당한다. 이 파일은 prod 에 적용하지 않는다)
+delete from public.records r using _work_merge m where r.work_id = m.victim_id;
+
+delete from public.works w using _work_merge m where w.id = m.victim_id;
+
+drop table _work_merge;
 
 -- ── 3. parent_work_id 그룹핑 연결 (UI 그룹핑 전용 — 동일성 판단 아님) ──
 update public.works c set parent_work_id = p.id
