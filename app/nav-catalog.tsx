@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/catalog/games", label: "게임 카탈로그(IGDB)" },
   { href: "/catalog/titles", label: "영화·드라마 카탈로그(TMDB)" },
   { href: "/import/steam", label: "Steam 가져오기" },
+  { href: "/import/csv", label: "CSV 가져오기(Letterboxd)" },
   { href: "/import/review", label: "가져오기 확인(T44 미리보기)" },
 ];
 
