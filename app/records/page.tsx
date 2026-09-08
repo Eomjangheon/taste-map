@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
 import StarRating from "@/components/star-rating";
+import AccountStatus from "@/components/account-status";
 import {
   getRecordStore,
   createRecord,
@@ -150,9 +151,12 @@ export default function RecordsPage() {
     <main className="mx-auto w-full max-w-xl p-6 sm:p-8">
       <div className="flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">내 기록</h1>
-        <a href="/library" className="text-sm font-medium text-blue-600">
-          모아보기 →
-        </a>
+        <span className="flex items-baseline gap-3">
+          <AccountStatus />
+          <a href="/library" className="text-sm font-medium text-blue-600">
+            모아보기 →
+          </a>
+        </span>
       </div>
       <p className="mt-1 text-xs text-gray-500">
         계정 없이 <strong>이 브라우저에만</strong> 저장됩니다 — 가입하면 서버에
