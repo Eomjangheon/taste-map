@@ -40,9 +40,16 @@ test("게스트 기록이 로그인 시 계정으로 옮겨진다 (T45 완료 �
   await expect(list).toContainText("스타듀 밸리");
   await expect(page.getByTestId("account-email")).toHaveText("e2e@taste.local");
 
-  // 4) 정리 겸 서버 삭제 확인 — 기록 삭제 후 빈 상태 (다음 실행의 멱등성 보장)
-  page.once("dialog", (d) => d.accept());
-  await list.locator("button", { hasText: "삭제" }).first().click();
+  // 4) 정리 겸 서버 삭제 확인 — 기록을 **전부** 지우고 빈 상태 (다음 실행의 멱등성 보장)
+  // ⚠ 1건만 지우면 멱등이 아니다. 이 테스트가 중간에 실패하면 업로드된 기록이 계정에 남고,
+  //    다음 실행은 2건 → 3건으로 쌓여 영영 빈 상태가 되지 않는다 (실제로 그렇게 깨져 있었다).
+  //    공용 계정이라 남은 기록을 여기서 모두 걷어낸다.
+  const remove = list.locator("button", { hasText: "삭제" });
+  for (let left = await remove.count(); left > 0; left = await remove.count()) {
+    page.once("dialog", (d) => d.accept());
+    await remove.first().click();
+    await expect(remove).toHaveCount(left - 1);
+  }
   await expect(list).toContainText("아직 기록이 없습니다");
 
   // 5) 로그아웃하면 게스트 로컬(업로드 후 비워짐)로 돌아간다
