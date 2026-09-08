@@ -1,8 +1,8 @@
 "use client";
 
-// 모아보기 (T17 리스트 + T41 그리드, 뷰 3종 분할 — 캘린더는 T42)
-// 필터 로직은 lib/records/filters.ts 모듈 — 모든 뷰가 같은 필터 상태를 공유하므로
-// 뷰를 전환해도 필터가 유지된다 (T42 요구사항 선반영).
+// 모아보기 (T17 리스트 + T41 그리드 + T42 캘린더 — 뷰 3종 완성)
+// 필터·검색 로직은 부모(여기)가 소유하고 모든 뷰가 같은 결과를 소비하므로
+// 뷰를 전환해도 필터·검색어가 유지된다 (T42 완료 조건).
 // demo=1이면 저장소 대신 검수용 데모 기록 200건(메모리)을 보여준다.
 
 import { useEffect, useMemo, useState } from "react";
@@ -17,9 +17,11 @@ import {
 } from "@/lib/records/filters";
 import { buildDemoRecords } from "@/lib/records/demo";
 import { MEDIA_LABEL, STATUS_LABEL } from "@/lib/records/labels";
+import { loose } from "@/lib/text";
 import { type Work } from "./types";
 import GridView from "./grid-view";
 import ListView from "./list-view";
+import CalendarView from "./calendar-view";
 
 const MEDIA_OPTIONS = ["all", "game", "movie", "tv"] as const;
 const STATUS_OPTIONS = [
@@ -30,13 +32,14 @@ const STATUS_OPTIONS = [
   "backlog",
 ] as const;
 
-type ViewMode = "grid" | "list";
+type ViewMode = "grid" | "list" | "calendar";
 
 export default function LibraryClient({ demo }: { demo: boolean }) {
   const [works, setWorks] = useState<Work[]>([]);
   const [records, setRecords] = useState<TasteRecord[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [filters, setFilters] = useState<RecordFilters>(DEFAULT_FILTERS);
+  const [query, setQuery] = useState(""); // 내 기록 제목 검색 (T42)
   const [view, setView] = useState<ViewMode>("grid"); // 그리드 = 대표 뷰 (§6.3)
 
   useEffect(() => {
@@ -69,11 +72,23 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
   const workById = useMemo(() => new Map(works.map((w) => [w.id, w])), [works]);
 
   const filtered = useMemo(() => {
-    const result = applyRecordFilters(
+    let result = applyRecordFilters(
       records,
       filters,
       (workId) => workById.get(workId)?.media_type
     );
+    // 내 기록 제목 검색 — 띄어쓰기·특수문자 무시 (T16 작품 검색과 같은 규칙)
+    const q = loose(query);
+    if (q) {
+      result = result.filter((r) => {
+        const w = workById.get(r.work_id);
+        if (!w) return false;
+        return (
+          loose(w.title_ko ?? "").includes(q) ||
+          loose(w.canonical_title).includes(q)
+        );
+      });
+    }
     // 감상일 내림차순, 감상일 없는 기록은 뒤에서 기록일 내림차순
     return [...result].sort((a, b) => {
       if (a.consumed_at && b.consumed_at)
@@ -82,14 +97,15 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
       if (b.consumed_at) return 1;
       return b.created_at.localeCompare(a.created_at);
     });
-  }, [records, filters, workById]);
+  }, [records, filters, query, workById]);
 
   const filterActive =
     filters.media !== "all" ||
     filters.status !== "all" ||
-    filters.period !== "all";
-  // 필터가 바뀌면 그리드의 "더 보기" 페이지를 처음으로 리셋
-  const filterKey = `${filters.media}|${filters.status}|${filters.period}`;
+    filters.period !== "all" ||
+    query !== "";
+  // 필터·검색이 바뀌면 그리드의 "더 보기" 페이지를 처음으로 리셋
+  const filterKey = `${filters.media}|${filters.status}|${filters.period}|${query}`;
 
   return (
     <main className="mx-auto w-full max-w-2xl p-6 sm:p-8">
@@ -136,6 +152,7 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
                 [
                   ["grid", "그리드"],
                   ["list", "리스트"],
+                  ["calendar", "캘린더"],
                 ] as [ViewMode, string][]
               ).map(([mode, label]) => (
                 <button
@@ -152,6 +169,13 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
                 </button>
               ))}
             </div>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="내 기록에서 제목 검색 (띄어쓰기 안 맞아도 OK)"
+              data-testid="record-search"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            />
             <div className="flex flex-wrap gap-1.5" data-testid="filter-media">
               {MEDIA_OPTIONS.map((m) => (
                 <button
@@ -205,7 +229,10 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
               <span className="text-xs text-gray-400">기간은 감상일 기준</span>
               {filterActive && (
                 <button
-                  onClick={() => setFilters(DEFAULT_FILTERS)}
+                  onClick={() => {
+                    setFilters(DEFAULT_FILTERS);
+                    setQuery("");
+                  }}
                   data-testid="filter-reset"
                   className="ml-auto text-xs text-blue-600"
                 >
@@ -231,6 +258,8 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
             </div>
           ) : view === "grid" ? (
             <GridView key={filterKey} records={filtered} workById={workById} />
+          ) : view === "calendar" ? (
+            <CalendarView records={filtered} workById={workById} />
           ) : (
             <ListView records={filtered} workById={workById} />
           )}
