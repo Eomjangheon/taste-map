@@ -43,6 +43,41 @@ export default function AuthPage() {
     );
   }
 
+  /** 계정 삭제 (T45, §6.4) — 이중 확인 후 서버 라우트 호출. 기록은 FK cascade로 함께 삭제 */
+  async function deleteAccount() {
+    if (
+      !confirm(
+        "정말 계정을 삭제할까요?\n모든 기록이 완전히 삭제되며 되돌릴 수 없습니다."
+      )
+    )
+      return;
+    if (!confirm("마지막 확인입니다. 계정과 기록을 완전히 삭제합니다.")) return;
+    setError(null);
+    setBusy(true);
+    try {
+      const { data } = await supabase!.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        setError("세션이 만료됐어요 — 다시 로그인해 주세요.");
+        return;
+      }
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: "삭제 실패" }));
+        setError(body.error ?? "삭제에 실패했어요. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+      await supabase!.auth.signOut();
+      alert("계정과 모든 기록이 삭제되었습니다. 이용해 주셔서 감사했어요.");
+      router.push("/");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -107,8 +142,8 @@ export default function AuthPage() {
             <span className="text-gray-500"> 로 로그인돼 있어요.</span>
           </p>
           <p className="text-xs text-gray-400">
-            로컬 기록의 서버 보관(동기화)은 준비 중이에요 — 지금은 이
-            브라우저에만 저장됩니다.
+            기록은 계정에 안전하게 보관돼요. 이 브라우저의 이전 게스트 기록은
+            로그인할 때 자동으로 계정으로 옮겨집니다.
           </p>
           <div className="flex gap-3">
             <a href="/records" className="text-blue-600">
@@ -121,6 +156,23 @@ export default function AuthPage() {
             >
               로그아웃
             </button>
+          </div>
+
+          {/* ── 계정 삭제 = 데이터 완전 삭제 (§6.4) ── */}
+          <div className="mt-4 border-t border-gray-100 pt-3">
+            <button
+              onClick={deleteAccount}
+              disabled={busy}
+              data-testid="delete-account"
+              className="text-xs text-gray-400 underline hover:text-red-600 disabled:opacity-50"
+            >
+              {busy ? "삭제 중…" : "계정 삭제 (모든 기록이 완전히 삭제됩니다)"}
+            </button>
+            {error && (
+              <p className="mt-2 text-xs text-red-600" data-testid="delete-error">
+                {error}
+              </p>
+            )}
           </div>
         </div>
       ) : (

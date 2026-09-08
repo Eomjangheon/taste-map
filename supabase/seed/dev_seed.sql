@@ -7,7 +7,8 @@ insert into auth.users (instance_id, id, aud, role, email, encrypted_password, e
 select '00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
        e.email, extensions.crypt('seedpass123!', extensions.gen_salt('bf')), now(),
        '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now()
-from (values ('seed1@taste.local'), ('seed2@taste.local'), ('seed3@taste.local'), ('seed4@taste.local')) as e(email)
+-- e2e@taste.local: 스모크 테스트 전용 계정 (T45 업로드 검증 — 시드 기록 오염 방지용, 기록 없음)
+from (values ('seed1@taste.local'), ('seed2@taste.local'), ('seed3@taste.local'), ('seed4@taste.local'), ('e2e@taste.local')) as e(email)
 where not exists (select 1 from auth.users u where u.email = e.email);
 
 -- ── 1b. 시드 유저 로그인 수리 (T25에서 발견) — SQL로 직접 넣은 유저는 GoTrue가
@@ -22,14 +23,14 @@ update auth.users set
   phone_change               = coalesce(phone_change, ''),
   phone_change_token         = coalesce(phone_change_token, ''),
   reauthentication_token     = coalesce(reauthentication_token, '')
-where email like 'seed%@taste.local';
+where email like 'seed%@taste.local' or email = 'e2e@taste.local';
 
 insert into auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
 select gen_random_uuid(), u.id, u.id::text,
        jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true),
        'email', now(), now(), now()
 from auth.users u
-where u.email like 'seed%@taste.local'
+where (u.email like 'seed%@taste.local' or u.email = 'e2e@taste.local')
   and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
 
 -- ── 2. 작품 50건 (§3.1 동일성 규칙 준수 — 시즌·DLC·리메이크·확장판·감독판 별개 / 현지화 동일) ──
