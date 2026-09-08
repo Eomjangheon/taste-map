@@ -4,13 +4,17 @@ import { test, expect } from "@playwright/test";
 // 전용 계정 e2e@taste.local 사용 (시드 유저 기록 오염 방지, dev_seed 참고).
 // 계정 삭제는 계정이 사라져 재실행이 불가능하므로 자동화하지 않는다 — 사람 검수 항목
 // (프리뷰에서 임시 가입 계정으로 확인).
+// T53부터 기록 입력 검색이 계약 API를 타므로 검색 스택 환경변수가 필요하다
+const hasEnv =
+  Boolean(process.env.TWITCH_CLIENT_ID) &&
+  Boolean(process.env.TMDB_READ_TOKEN) &&
+  Boolean(process.env.SUPABASE_SECRET_KEY) &&
+  Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
+
 test("게스트 기록이 로그인 시 계정으로 옮겨진다 (T45 완료 조건)", async ({
   page,
 }) => {
-  test.skip(
-    !process.env.NEXT_PUBLIC_SUPABASE_URL,
-    "Supabase 환경변수가 없는 환경에서는 건너뜀"
-  );
+  test.skip(!hasEnv, "검색 API 환경변수가 없는 환경에서는 건너뜀");
 
   // 1) 게스트로 기록 1건 생성 (로컬 저장)
   await page.goto("/records");
