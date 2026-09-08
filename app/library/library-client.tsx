@@ -23,6 +23,7 @@ import GridView from "./grid-view";
 import ListView from "./list-view";
 import CalendarView from "./calendar-view";
 import AccountStatus from "@/components/account-status";
+import { uploadLocalRecords } from "@/lib/records/sync";
 
 const MEDIA_OPTIONS = ["all", "game", "movie", "tv"] as const;
 const STATUS_OPTIONS = [
@@ -46,6 +47,8 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      // 로그인 상태면 남은 로컬 기록을 먼저 계정으로 옮긴다 (T45 재시도 경로)
+      if (!demo) await uploadLocalRecords().catch(() => {});
       const workList: Work[] = supabase
         ? ((
             await supabase
@@ -65,8 +68,12 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
       setLoaded(true);
     }
     load();
+    // 로그인·로그아웃 즉시 반영 — 저장소가 세션에 따라 바뀌므로 다시 읽는다 (T45)
+    const { data: sub } =
+      supabase?.auth.onAuthStateChange(() => load()) ?? { data: null };
     return () => {
       cancelled = true;
+      sub?.subscription.unsubscribe();
     };
   }, [demo]);
 

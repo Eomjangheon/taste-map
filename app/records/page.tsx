@@ -9,7 +9,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
 import StarRating from "@/components/star-rating";
-import AccountStatus from "@/components/account-status";
+import AccountStatus, { useSessionEmail } from "@/components/account-status";
+import { uploadLocalRecords } from "@/lib/records/sync";
 import {
   getRecordStore,
   createRecord,
@@ -28,6 +29,7 @@ type WorkOption = {
 
 export default function RecordsPage() {
   const store = useMemo(() => getRecordStore(), []);
+  const sessionEmail = useSessionEmail();
   const [works, setWorks] = useState<WorkOption[]>([]);
   const [records, setRecords] = useState<TasteRecord[]>([]);
   const [query, setQuery] = useState("");
@@ -48,6 +50,11 @@ export default function RecordsPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      // 로그인 상태면 남아 있는 로컬 기록을 먼저 계정으로 옮긴다 (T45 — 실패 시 다음 방문 때 재시도)
+      const moved = await uploadLocalRecords().catch(() => 0);
+      if (moved > 0 && !cancelled) {
+        setMessage(`이 브라우저의 기록 ${moved}건을 계정으로 옮겼어요`);
+      }
       const list = await store.list();
       if (!cancelled) setRecords(list);
       if (supabase) {
@@ -59,8 +66,12 @@ export default function RecordsPage() {
       }
     }
     load();
+    // 로그인·로그아웃 즉시 반영 — 저장소가 세션에 따라 바뀌므로 다시 읽는다 (T45)
+    const { data: sub } =
+      supabase?.auth.onAuthStateChange(() => load()) ?? { data: null };
     return () => {
       cancelled = true;
+      sub?.subscription.unsubscribe();
     };
   }, [store]);
 
@@ -159,8 +170,17 @@ export default function RecordsPage() {
         </span>
       </div>
       <p className="mt-1 text-xs text-gray-500">
-        계정 없이 <strong>이 브라우저에만</strong> 저장됩니다 — 가입하면 서버에
-        안전하게 보관돼요 (준비 중).
+        {sessionEmail ? (
+          <>기록이 계정에 안전하게 보관되고 있어요.</>
+        ) : (
+          <>
+            계정 없이 <strong>이 브라우저에만</strong> 저장됩니다 —{" "}
+            <a href="/auth" className="text-blue-600">
+              가입하면
+            </a>{" "}
+            서버에 안전하게 보관돼요.
+          </>
+        )}
       </p>
 
       {/* ── 1단계: 작품 찾기 → 상태 탭 = 저장 ── */}

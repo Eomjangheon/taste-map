@@ -6,8 +6,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-export default function AccountStatus() {
-  // null = 아직 확인 전(깜빡임 방지용으로 아무것도 안 그림), "" = 비로그인
+/** 현재 세션 이메일 훅 — null = 확인 전, "" = 비로그인 (T45에서 문구 분기용으로 분리) */
+export function useSessionEmail(): string | null {
   const [email, setEmail] = useState<string | null>(supabase ? null : "");
 
   useEffect(() => {
@@ -20,6 +20,12 @@ export default function AccountStatus() {
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  return email;
+}
+
+export default function AccountStatus() {
+  const email = useSessionEmail();
 
   if (email === null || !supabase) return null;
 
