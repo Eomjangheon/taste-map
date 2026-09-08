@@ -13,13 +13,27 @@ test("캘린더 뷰 + 기록 검색 + 뷰 전환 필터 유지 (T42 완료 조�
   const count = page.getByTestId("filtered-count");
   await expect(count).toHaveText("200");
 
-  // ── 내 기록 제목 검색: 띄어쓰기 무시 ("스타듀밸리" → "스타듀 밸리") ──
-  await page.getByTestId("record-search").fill("스타듀밸리");
+  // ── 내 기록 제목 검색: 띄어쓰기 무시 ("스타듀 밸리" → "스타듀밸리") ──
+  // 검색어를 화면에 실제로 있는 제목에서 뽑는다. 특정 작품(예전엔 "스타듀밸리")을 박아 두면
+  // 카탈로그가 바뀔 때마다 깨진다 — 여기서 확인할 것은 카탈로그 내용이 아니라 '띄어쓰기 무시'다.
+  await page.getByTestId("view-list").click();
+  const titles = await page
+    .getByTestId("library-list")
+    .locator("li > div > p:first-child")
+    .allInnerTexts();
+  // 제목 뒤에는 출시 연도가 붙어 나온다 — 뒤쪽 4자리만 떼어낸다
+  // ("Portal 2 2011" → "Portal 2", 연도가 없으면 그대로)
+  const spaced = titles
+    .map((t) => t.trim().replace(/\s*\d{4}$/u, "").trim())
+    .filter((t) => t.includes(" "));
+  const target = spaced.find((t) => /\p{Script=Hangul}/u.test(t)) ?? spaced[0];
+  expect(target, "띄어쓰기가 있는 제목이 목록에 하나는 있어야 한다").toBeTruthy();
+
+  await page.getByTestId("record-search").fill(target!.split(" ").join(""));
   await expect(count).not.toHaveText("200");
   const searchCount = Number(await count.textContent());
   expect(searchCount).toBeGreaterThan(0);
-  await page.getByTestId("view-list").click();
-  await expect(page.getByTestId("library-list")).toContainText("스타듀 밸리");
+  await expect(page.getByTestId("library-list")).toContainText(target!);
   await page.getByTestId("filter-reset").click();
   await expect(count).toHaveText("200");
 

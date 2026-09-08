@@ -48,8 +48,16 @@ export function buildDemoRecords(
   const rand = mulberry32(17); // T17
   const records: TasteRecord[] = [];
 
+  // 카탈로그 전체에 고르게 걸친다.
+  // ⚠ `works[i % works.length]` 로 두면 **카탈로그의 앞 200건만** 쓰게 된다. works.id 는 UUID 라
+  //   정렬 순서에 의미가 없어서, 카탈로그가 커질수록 데모에 뽑히는 작품이 제멋대로 바뀐다.
+  //   실제로 카탈로그가 50건 → 402건으로 늘자 한국어 제목이 있는 시드 작품 대부분이 창 밖으로
+  //   밀려나 데모 화면에서 사라졌다(T42 스모크가 이걸로 깨졌다). 보폭을 두고 훑으면
+  //   건수는 그대로면서 카탈로그 전 구간이 대표된다.
+  const stride = Math.max(1, Math.floor(works.length / count));
+
   for (let i = 0; i < count; i++) {
-    const work = works[i % works.length];
+    const work = works[(i * stride) % works.length];
     const status = STATUS_POOL[Math.floor(rand() * STATUS_POOL.length)];
 
     // 감상일: 최근 2년에 고르게 분포 (최근 30일·올해·작년 필터가 모두 결과를 갖도록)
