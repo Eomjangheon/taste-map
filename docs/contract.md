@@ -43,6 +43,25 @@
 **표준 이벤트 이름** (T10에서 구현, 여기가 기준):
 `app_opened` · `record_created` {media_type, import_source} · `import_started` {source} · `import_completed` {source, total, auto_matched} · `set_progress_changed` {set_id, progress} · `result_viewed` {month} · `share_image_created` {type}
 
+## 4-1. 매체별 카탈로그 소스 — MVP 범위 결정
+
+| 매체 | MVP 소스 | 보조 | 결정 |
+|---|---|---|---|
+| 게임 | IGDB (+ Steam appid 역매핑) | — | T11 구현 |
+| 영화 | TMDB | ~~KMDb~~ | **KMDb는 MVP에서 제외**, 백로그 T50으로 미룬다 (T12에서 결정·기록) |
+| 드라마·TV | TMDB | — | T12 구현 |
+
+**KMDb 제외 사유**: 명세서 §3.3은 영화 보조 소스로 KMDb(한국 영화 메타데이터)를 지정했으나, TMDB의 `language=ko-KR`
+응답만으로 한국어 제목이 충분히 확보되는지 먼저 확인한다. 한국 영화 제목·메타데이터 결손이 **실사용에서 확인되면**
+그때 보조 연동한다. 추적 유실 방지를 위해 백로그 이슈 T50으로 명시해 둔다.
+
+**TMDB 라이선스 의무**: 비상업적 무료 사용의 조건은 **TMDB 출처 표기**다. TMDB 데이터가 표시되는 모든 화면에
+출처를 노출한다. 수익화·광고·과금을 시작하는 시점에 상업용 라이선스를 재검토한다.
+
+**TV 시즌 표현 (§3.1 D5)**: 시즌은 별개 works 행이다. `external_ids.tmdb_season_id`(TMDB 시즌 id)로 식별하고,
+시리즈는 `parent_work_id`로만 연결한다. 시즌 행에는 시리즈의 `tmdb` id를 넣지 않는다 — 같은 값이 되어 중복 대조가
+서로를 물어버린다. 영화와 드라마의 `tmdb` id는 네임스페이스가 다르므로 **대조는 반드시 media_type과 함께** 한다.
+
 ## 5. 스키마 변경 절차
 
 1. 변경이 필요한 사람이 **제안** (Linear 이슈 코멘트 또는 카톡)

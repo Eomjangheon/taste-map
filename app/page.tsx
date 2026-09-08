@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { CatalogNav } from "./nav-catalog";
 
 // DB 상태 확인 화면이므로 항상 요청 시점에 렌더링한다
 export const dynamic = "force-dynamic";
@@ -77,6 +78,7 @@ export default async function Home() {
         )}
       </div>
 
+      {/* 링크는 트랙별 파일에서 가져온다 — 이 목록을 양쪽이 직접 고치면 머지 충돌이 난다 */}
       <div className="mt-4 flex flex-wrap gap-4">
         <a href="/records" className="text-sm font-medium text-blue-600">
           내 기록 →
@@ -84,9 +86,7 @@ export default async function Home() {
         <a href="/library" className="text-sm font-medium text-blue-600">
           모아보기 →
         </a>
-        <a href="/catalog/games" className="text-sm font-medium text-blue-600">
-          게임 카탈로그(IGDB) →
-        </a>
+        <CatalogNav />
       </div>
     </main>
   );
