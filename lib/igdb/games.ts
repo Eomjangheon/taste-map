@@ -195,3 +195,27 @@ export async function findGamesBySteamAppIds(appIds: number[]): Promise<Map<numb
   }
   return result;
 }
+
+/**
+ * IGDB 게임 id → 적재 가능한 후보 (T19 가져오기가 `findGamesBySteamAppIds` 다음에 쓴다).
+ *
+ * `searchGames` 와 같은 필드 조합·같은 폴백을 쓴다 — 사라진 필드를 쓴 쿼리는 에러 대신
+ * 조용히 0건을 주기 때문이다 (T3 §3-3). 검색이 아니라 id 조회라는 점만 다르다.
+ */
+export async function getGamesByIgdbIds(igdbIds: number[]): Promise<GameCandidate[]> {
+  const unique = [...new Set(igdbIds.filter((id) => Number.isInteger(id) && id > 0))];
+  if (unique.length === 0) return [];
+
+  const candidates: GameCandidate[] = [];
+  for (let i = 0; i < unique.length; i += 200) {
+    const chunk = unique.slice(i, i + 200);
+    const common = `where id = (${chunk.join(",")}); limit ${chunk.length};`;
+    const { rows } = await igdbQueryWithFallback<IgdbGame>("games", [
+      `fields id,name,first_release_date,game_type,parent_game.id,parent_game.name,parent_game.first_release_date,cover.image_id,external_games.uid,external_games.external_game_source; ${common}`,
+      `fields id,name,first_release_date,game_type,parent_game.id,parent_game.name,cover.image_id; ${common}`,
+      `fields id,name,first_release_date,cover.image_id; ${common}`,
+    ]);
+    candidates.push(...rows.map(toCandidate).filter((c): c is GameCandidate => c !== null));
+  }
+  return enrichParents(candidates);
+}

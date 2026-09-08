@@ -3,7 +3,7 @@
 # 필요 설정: GitHub 저장소 Settings → Secrets and variables → Actions → Variables 에
 #   NEXT_PUBLIC_SUPABASE_URL_DEV / NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV (dev 프로젝트 값)
 # 그리고 Secrets 에 SUPABASE_SECRET_KEY_DEV / TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET (T11).
-#   그리고 TMDB_READ_TOKEN (T12). 이것들이 없으면 해당 스모크는 skip 된다 — 빨간불이 되지는 않지만 완료 조건을 CI가 지켜주지 못한다.
+#   그리고 TMDB_READ_TOKEN (T12) / STEAM_API_KEY (T19). 이것들이 없으면 해당 스모크는 skip 된다 — 빨간불이 되지는 않지만 완료 조건을 CI가 지켜주지 못한다.
 name: CI
 
 on:
@@ -23,6 +23,7 @@ jobs:
       TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
       TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
       TMDB_READ_TOKEN: ${{ secrets.TMDB_READ_TOKEN }}
+      STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
