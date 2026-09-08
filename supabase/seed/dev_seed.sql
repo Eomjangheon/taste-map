@@ -2,13 +2,35 @@
 -- ⚠ dev 프로젝트(taste-map-dev)에만 적용한다. prod 금지 (실서비스 카탈로그는 T11~T13 온디맨드 적재가 담당).
 -- 멱등: 여러 번 실행해도 중복 생성 없음 (작품=제목+연도 가드, 기록=[seed] 마커 삭제 후 재생성).
 
--- ── 1. 시드 유저 4명 (FK용 — 로그인 보장 안 함, 실제 가입 흐름은 T25) ──
+-- ── 1. 시드 유저 4명 (FK용 + T25부터 로그인 스모크에도 사용: seed1 / seedpass123!) ──
 insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 select '00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
        e.email, extensions.crypt('seedpass123!', extensions.gen_salt('bf')), now(),
        '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now()
 from (values ('seed1@taste.local'), ('seed2@taste.local'), ('seed3@taste.local'), ('seed4@taste.local')) as e(email)
 where not exists (select 1 from auth.users u where u.email = e.email);
+
+-- ── 1b. 시드 유저 로그인 수리 (T25에서 발견) — SQL로 직접 넣은 유저는 GoTrue가
+-- 빈 문자열('')을 기대하는 토큰 컬럼들이 NULL이고 auth.identities 행이 없어서
+-- 로그인 시도 시 500 "Database error querying schema"가 난다. 멱등 수리.
+update auth.users set
+  confirmation_token         = coalesce(confirmation_token, ''),
+  recovery_token             = coalesce(recovery_token, ''),
+  email_change               = coalesce(email_change, ''),
+  email_change_token_new     = coalesce(email_change_token_new, ''),
+  email_change_token_current = coalesce(email_change_token_current, ''),
+  phone_change               = coalesce(phone_change, ''),
+  phone_change_token         = coalesce(phone_change_token, ''),
+  reauthentication_token     = coalesce(reauthentication_token, '')
+where email like 'seed%@taste.local';
+
+insert into auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+select gen_random_uuid(), u.id, u.id::text,
+       jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true),
+       'email', now(), now(), now()
+from auth.users u
+where u.email like 'seed%@taste.local'
+  and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
 
 -- ── 2. 작품 50건 (§3.1 동일성 규칙 준수 — 시즌·DLC·리메이크·확장판·감독판 별개 / 현지화 동일) ──
 insert into public.works (media_type, canonical_title, title_ko, release_year, external_ids)

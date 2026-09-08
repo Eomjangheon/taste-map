@@ -22,6 +22,7 @@ import { type Work } from "./types";
 import GridView from "./grid-view";
 import ListView from "./list-view";
 import CalendarView from "./calendar-view";
+import AccountStatus from "@/components/account-status";
 
 const MEDIA_OPTIONS = ["all", "game", "movie", "tv"] as const;
 const STATUS_OPTIONS = [
@@ -111,9 +112,12 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
     <main className="mx-auto w-full max-w-2xl p-6 sm:p-8">
       <div className="flex items-baseline justify-between">
         <h1 className="text-2xl font-bold">모아보기</h1>
-        <a href="/records" className="text-sm font-medium text-blue-600">
-          + 기록하기
-        </a>
+        <span className="flex items-baseline gap-3">
+          <AccountStatus />
+          <a href="/records" className="text-sm font-medium text-blue-600">
+            + 기록하기
+          </a>
+        </span>
       </div>
       {demo && (
         <p className="mt-1 text-xs text-amber-600" data-testid="demo-banner">
