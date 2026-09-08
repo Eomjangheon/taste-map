@@ -6,10 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "measure:matching": "playwright test tests/t43-matching-engine.spec.ts --reporter=list"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",
+    "fastest-levenshtein": "^1.0.16",
     "idb": "^8.0.3",
     "next": "16.3.4",
     "posthog-js": "^1.426.2",
