@@ -14,6 +14,13 @@ export type TasteRecord = {
   replay_count: number;
   consumed_at: string | null; // YYYY-MM-DD
   note: string | null;
+  /**
+   * 진행 지점 (§6.2 "시리즈 n화 / 책 n페이지 / 게임 n시간").
+   * 마이그레이션 0002 에 `progress text` 로 이미 있는 컬럼을 타입에 드러낸 것이다 —
+   * 새 필드가 아니고 스키마 변경도 아니다. 전용 입력 UI 는 v1.
+   * 지금 채우는 곳은 Steam 가져오기(T19)의 플레이 시간 하나뿐이다 (`"20.5시간"`).
+   */
+  progress?: string | null;
   visibility: "private" | "public";
   import_source: "manual" | "steam" | "csv" | "screenshot" | "text";
   created_at: string; // ISO

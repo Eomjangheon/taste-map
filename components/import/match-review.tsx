@@ -12,6 +12,7 @@
 
 import { useMemo, useState } from "react";
 import type { ReviewItem, ReviewWork } from "@/lib/matching/review";
+import { playtimeToProgress } from "@/lib/steam/playtime";
 
 type Props = {
   items: ReviewItem[];
@@ -25,6 +26,13 @@ const MEDIA_LABEL: Record<string, string> = { game: "게임", movie: "영화", t
 
 /** 유저가 직접 고른 선택. key → 작품 id, 또는 "" (건너뛰기) */
 type Picks = Record<string, string>;
+
+/** 가져온 항목의 부가 정보 — 지금은 Steam 플레이 시간뿐이다 */
+function SourceMeta({ item }: { item: ReviewItem }) {
+  const playtime = playtimeToProgress(item.playtimeMinutes);
+  if (!playtime) return null;
+  return <span data-testid="source-playtime" className="text-xs text-gray-400"> · {playtime}</span>;
+}
 
 function WorkLine({ work }: { work: ReviewWork }) {
   return (
@@ -136,6 +144,7 @@ export function MatchReview({ items, onConfirm, confirmLabel }: Props) {
                     {item.sourceYear ? (
                       <span className="text-gray-500"> ({item.sourceYear})</span>
                     ) : null}
+                    <SourceMeta item={item} />
                   </p>
 
                   {chosen !== undefined ? (
@@ -215,7 +224,10 @@ export function MatchReview({ items, onConfirm, confirmLabel }: Props) {
                   data-testid="auto-item"
                   className="flex flex-wrap items-center gap-2 rounded border border-gray-100 px-3 py-2"
                 >
-                  <span className="text-gray-500">{item.sourceTitle}</span>
+                  <span className="text-gray-500">
+                    {item.sourceTitle}
+                    <SourceMeta item={item} />
+                  </span>
                   <span className="text-gray-300">→</span>
                   <WorkLine work={item.matched!} />
                   <span className="text-xs text-gray-400">{item.reason}</span>

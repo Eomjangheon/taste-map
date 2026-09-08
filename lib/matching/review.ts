@@ -37,6 +37,11 @@ export type ReviewItem = {
   sourceYear: number | null;
   mediaType: string;
   status: ReviewStatus;
+  /**
+   * Steam 이 준 누적 플레이 시간(분). 다른 경로에서는 없다.
+   * 확정 시 기록의 `progress` 로 보존된다 (T19).
+   */
+  playtimeMinutes?: number | null;
   /** 자동 확정된 작품. choose·skip 이면 null */
   matched: ReviewWork | null;
   /** 왜 이렇게 판정했는지 — 유저에게 그대로 보여준다 */
@@ -60,6 +65,8 @@ export type ReviewSource = {
   title: string;
   year: number | null;
   mediaType: string;
+  /** Steam 경로만 채운다 */
+  playtimeMinutes?: number | null;
 };
 
 /** 엔진 결과 → 확인 화면 항목 */
@@ -77,6 +84,7 @@ export function toReviewItems(sources: ReviewSource[], results: MatchResult[]): 
       sourceTitle: source.title,
       sourceYear: source.year,
       mediaType: source.mediaType,
+      playtimeMinutes: source.playtimeMinutes ?? null,
       status,
       matched: result.entry ? toReviewWork(result.entry) : null,
       reason: result.candidates[0]?.reason ?? "카탈로그에서 찾지 못함",
