@@ -37,7 +37,47 @@
 
 ## 4. 도메인 간 API 계약
 
-- **작품 조회·검색 API** (A 소유, T13에서 시그니처 고정 후 이 절에 기록): B는 이 API로만 작품을 조회한다. T13 완성 전까지 B는 시드 작품(T9)으로 개발.
+- **작품 조회·검색 API** (A 소유) — **T13에서 확정. 아래가 계약이다.** B는 works를 직접 읽지 말고 이 경로로만 조회한다. 변경은 §5 절차를 따른다.
+
+```
+GET /api/works?q=<검색어>&media=<all|game|movie|tv>&limit=<1..50>
+```
+
+```jsonc
+{
+  "query": "오징어 게임",
+  "media": "all",
+  "origin": "catalog",          // catalog = 자체 DB에서 찾음 / external = 외부에서 새로 가져옴 / none = 없음
+  "results": [{
+    "id": "uuid",               // works.id — 기록의 work_id 로 그대로 쓴다
+    "mediaType": "tv",          // game | movie | tv
+    "title": "오징어 게임",       // 표시용. title_ko 가 있으면 그것, 없으면 canonical_title
+    "canonicalTitle": "Squid Game",
+    "titleKo": "오징어 게임",     // 없으면 null
+    "releaseYear": 2021,        // 없으면 null
+    "coverUrl": "https://...",  // 없으면 null (works에 포스터 컬럼이 없어 조회 시점에 유도한다)
+    "parentWorkId": "uuid",     // 시즌·DLC의 상위 작품. 없으면 null. **동일성 판단에 쓰지 않는다**
+    "externalIds": { "tmdb": 93405 },
+    "source": "official"
+  }]
+}
+```
+
+```
+GET /api/works/{id}
+```
+
+```jsonc
+{ "work": { /* 위 결과 필드 전부 */,
+  "parent": { /* 상위 작품 1건 또는 null */ },
+  "children": [ /* 하위 작품(시즌·DLC) 목록 */ ] } }
+```
+
+**규약**
+- 검색은 **자체 DB 우선 → 비어 있을 때만 외부 API 조회·적재**(온디맨드). 그래서 첫 검색은 느릴 수 있다.
+- 오류는 `{ "error": "...", "missingEnv"?: [...] }` 형태다. `400` 잘못된 파라미터 · `404` 없는 작품 · `503` 환경변수 누락 · `502` 외부 API 실패.
+- `q` 는 2글자 이상을 권장한다(화면은 2글자 미만이면 호출하지 않는다).
+- **제목 정규화는 `lib/catalog/normalize.ts` 의 `normalizeTitle()` 하나로 통일한다.** 매칭 엔진(T18·T43)도 같은 함수를 쓴다. 한글에 오작동하는 `\w`/`\W`/`` 를 쓰지 않는다(§AGENTS.md).
 - **`track(name, properties)` 유틸** (B 소유, T10): 모든 이벤트 기록은 이 함수 하나로. PostHog + events 테이블 이중 기록은 유틸 내부에서 처리 — 호출부는 신경 쓰지 않는다.
 
 **표준 이벤트 이름** (T10에서 구현, 여기가 기준):
