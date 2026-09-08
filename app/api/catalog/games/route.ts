@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { IgdbError } from "@/lib/igdb/client";
 import { coverUrl, searchGames } from "@/lib/igdb/games";
 import { countWorks, upsertGameWorks } from "@/lib/catalog/works";
+import { searchLocalWorks } from "@/lib/catalog/title-ko";
 
 /** 이 경로가 요구하는 환경변수 (.env.example 과 같은 이름) */
 const REQUIRED_ENV = [
@@ -40,17 +41,36 @@ export async function GET(request: Request) {
   }
 
   try {
+    // 자체 카탈로그 우선 조회 — T14 로 등록한 한국어 제목은 우리 DB 에만 있다.
+    // IGDB 는 한국어 질의를 이해하지 못하므로 이 단계가 없으면 등록해도 검색되지 않는다.
+    const local = await searchLocalWorks(query, ["game"]);
+
     const candidates = await searchGames(query);
 
     // 빈 결과를 명시적으로 다룬다 — "에러 안 났으니 성공"은 성립하지 않는다 (T3 §3 조용한 실패).
     if (candidates.length === 0) {
       return NextResponse.json({
         query,
-        results: [],
+        results: local.map((work) => ({
+          id: work.id,
+          canonicalTitle: work.canonical_title,
+          titleKo: work.title_ko,
+          releaseYear: work.release_year,
+          mediaType: work.media_type,
+          igdbId: work.external_ids?.igdb ?? null,
+          steamAppId: work.external_ids?.steam_appid ?? null,
+          parentWorkId: work.parent_work_id,
+          gameType: null,
+          coverUrl: null,
+          fromCatalog: true,
+        })),
         created: 0,
         existing: 0,
         totalWorks: await countWorks(),
-        note: "IGDB 검색 결과가 0건입니다. 제목 철자 또는 IGDB 스키마 변경(필드 소실)을 의심하세요.",
+        note:
+          local.length > 0
+            ? "IGDB 검색은 0건이지만 자체 카탈로그에서 찾았습니다 (한국어 제목 등록분)."
+            : "IGDB 검색 결과가 0건입니다. 제목 철자 또는 IGDB 스키마 변경(필드 소실)을 의심하세요.",
       });
     }
 
@@ -63,10 +83,8 @@ export async function GET(request: Request) {
         p.work !== null
       );
 
-    return NextResponse.json({
-      query,
-      results: pairs.map(({ work, candidate }) => {
-        return {
+    const fromIgdb = pairs.map(({ work, candidate }) => {
+      return {
           id: work.id,
           canonicalTitle: work.canonical_title,
           titleKo: work.title_ko,
@@ -77,9 +95,32 @@ export async function GET(request: Request) {
           parentWorkId: work.parent_work_id,
           gameType: candidate.gameType ?? null,
           // 커버는 저장하지 않고 조회 시점에 조립한다 (docs/igdb.md)
-          coverUrl: candidate.coverImageId ? coverUrl(candidate.coverImageId) : null,
-        };
-      }),
+        coverUrl: candidate.coverImageId ? coverUrl(candidate.coverImageId) : null,
+        fromCatalog: false,
+      };
+    });
+
+    // 외부 결과에 이미 있는 작품은 빼고, 자체 카탈로그에서만 나온 것을 앞에 붙인다
+    const seen = new Set(fromIgdb.map((r) => r.id));
+    const localOnly = local
+      .filter((work) => !seen.has(work.id))
+      .map((work) => ({
+        id: work.id,
+        canonicalTitle: work.canonical_title,
+        titleKo: work.title_ko,
+        releaseYear: work.release_year,
+        mediaType: work.media_type,
+        igdbId: work.external_ids?.igdb ?? null,
+        steamAppId: work.external_ids?.steam_appid ?? null,
+        parentWorkId: work.parent_work_id,
+        gameType: null,
+        coverUrl: null,
+        fromCatalog: true,
+      }));
+
+    return NextResponse.json({
+      query,
+      results: [...localOnly, ...fromIgdb],
       created,
       existing,
       totalWorks: await countWorks(),
