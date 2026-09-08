@@ -56,7 +56,9 @@ export default function LibraryClient({ demo }: { demo: boolean }) {
               .select(
                 "id, media_type, canonical_title, title_ko, release_year, external_ids"
               )
-              .order("id")
+              // 생성순 고정 — 카탈로그가 온디맨드 적재로 계속 자라도(T11~T13)
+              // 데모 200건이 항상 초기 시드 작품들에서 만들어지게 (uuid 순서는 매번 뒤섞임)
+              .order("created_at", { ascending: true })
           ).data ?? [])
         : [];
       const recordList = demo
