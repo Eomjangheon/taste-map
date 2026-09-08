@@ -40,3 +40,46 @@ test("기록 입력 검색이 /api/works 를 소비한다 (T53 완료 조건)", 
   await expect(page.getByTestId("save-message")).toBeVisible();
   await expect(page.getByTestId("record-list")).toContainText("기생충");
 });
+
+test("IME 조합 중에도 입력값이 유지된다 (WEB-53 검수 버그 회귀 방지)", async ({
+  page,
+}) => {
+  test.skip(!hasEnv, "검색 API 환경변수가 없는 환경에서는 건너뜀");
+
+  await page.goto("/records");
+  // 한글 IME 조합 시퀀스 시뮬레이션: compositionstart 후 input 이벤트.
+  // 버그 패턴(조합 중 setQuery 건너뜀)이면 React가 controlled value를 ""로 되돌려 입력이 사라진다.
+  await page.evaluate(() => {
+    const inp = document.querySelector(
+      '[data-testid="work-search"]'
+    ) as HTMLInputElement;
+    inp.focus();
+    inp.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value"
+    )!.set!;
+    // 2글자여야 조합 중 상태 변경(로딩 표시)이 리렌더를 일으켜 구버그가 드러난다
+    setter.call(inp, "기생");
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await expect(page.getByTestId("work-search")).toHaveValue("기생"); // 조합 중 입력 유지
+
+  // 조합 확정 → 그 값으로 검색이 발사된다
+  await page.evaluate(() => {
+    const inp = document.querySelector(
+      '[data-testid="work-search"]'
+    ) as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value"
+    )!.set!;
+    setter.call(inp, "기생충");
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+    inp.dispatchEvent(
+      new CompositionEvent("compositionend", { bubbles: true, data: "기생충" })
+    );
+  });
+  await expect(page.getByTestId("work-search")).toHaveValue("기생충");
+  await expect(page.getByTestId("work-results")).toContainText("기생충");
+});

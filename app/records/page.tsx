@@ -47,7 +47,8 @@ export default function RecordsPage() {
   const sessionEmail = useSessionEmail();
   const [works, setWorks] = useState<WorkOption[]>([]);
   const [records, setRecords] = useState<TasteRecord[]>([]);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(""); // 입력창 표시값 — IME 조합 중에도 항상 갱신 (안 하면 조합이 죽어 입력 먹통)
+  const [searchTerm, setSearchTerm] = useState(""); // 검색 발사용 — 조합이 확정된 값만
   const [selectedWork, setSelectedWork] = useState<WorkOption | null>(null);
   // T53: 검색 상태 — null = 검색 전(2글자 미만 포함)
   const [results, setResults] = useState<SearchResult[] | null>(null);
@@ -105,7 +106,7 @@ export default function RecordsPage() {
 
   // T53: 계약 API 검색 (디바운스, 2글자 미만 미호출 — contract.md §4 규약)
   useEffect(() => {
-    const q = query.trim();
+    const q = searchTerm.trim();
     if (q.length < 2) return; // 상태 정리는 입력 핸들러에서 (린트: effect 내 동기 setState 금지)
     let active = true;
     const timer = setTimeout(async () => {
@@ -141,7 +142,7 @@ export default function RecordsPage() {
       active = false;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [searchTerm]);
 
   /** 검색 결과 선택 — 제목 표시 캐시(works)에도 합류시켜 저장 직후 목록에 제목이 나오게 */
   function selectResult(r: SearchResult) {
@@ -175,6 +176,7 @@ export default function RecordsPage() {
     }
     setSelectedWork(null);
     setQuery("");
+    setSearchTerm("");
     setResults(null); // 다음 검색을 위해 결과 초기화 (지우지 않으면 이전 목록이 다시 보임)
     await reload();
     openDetail(saved); // 2단계를 바로 열어줌 — 원치 않으면 그냥 지나가면 됨
@@ -256,10 +258,10 @@ export default function RecordsPage() {
                 composing.current = true;
               }}
               onCompositionEnd={(e) => {
-                // 한글 조합이 끝난 시점의 값으로 검색 (AGENTS.md 한국어 입력 UI 규칙)
+                // 조합이 확정된 값으로만 검색을 발사한다 (AGENTS.md 한국어 입력 UI 규칙)
                 composing.current = false;
                 const v = e.currentTarget.value;
-                setQuery(v);
+                setSearchTerm(v);
                 if (v.trim().length < 2) {
                   setResults(null);
                   setSearchError(null);
@@ -268,9 +270,11 @@ export default function RecordsPage() {
               }}
               onChange={(e) => {
                 const v = e.target.value;
+                // 표시값은 조합 중에도 반드시 갱신 — 건너뛰면 React가 값을 되돌려 IME 입력이 먹통이 된다
+                setQuery(v);
                 setSearching(v.trim().length >= 2);
                 if (!composing.current) {
-                  setQuery(v);
+                  setSearchTerm(v);
                   if (v.trim().length < 2) {
                     setResults(null);
                     setSearchError(null);
