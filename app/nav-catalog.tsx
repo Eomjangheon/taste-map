@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/search", label: "작품 검색" },
   { href: "/catalog/games", label: "게임 카탈로그(IGDB)" },
   { href: "/catalog/titles", label: "영화·드라마 카탈로그(TMDB)" },
+  { href: "/import/review", label: "가져오기 확인(T44 미리보기)" },
 ];
 
 export function CatalogNav() {
